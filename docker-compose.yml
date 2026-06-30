@@ -1,0 +1,132 @@
+services:
+  api:
+    build: .
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://customer_service:change_me@postgres:5432/customer_service}
+      REDIS_ENABLED: ${COMPOSE_REDIS_ENABLED:-true}
+      REDIS_URL: ${COMPOSE_REDIS_URL:-redis://redis:6379/0}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT_REQUESTS_PER_MINUTE: ${RATE_LIMIT_REQUESTS_PER_MINUTE:-120}
+      LOGIN_RATE_LIMIT_PER_MINUTE: ${LOGIN_RATE_LIMIT_PER_MINUTE:-10}
+      AUTH_ENABLED: ${AUTH_ENABLED:-false}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      AUTH_ACCESS_TOKEN_MINUTES: ${AUTH_ACCESS_TOKEN_MINUTES:-480}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_BOOTSTRAP_TENANT_NAME: ${AUTH_BOOTSTRAP_TENANT_NAME:-星选商城}
+      AUTH_BOOTSTRAP_ADMIN_EMAIL: ${AUTH_BOOTSTRAP_ADMIN_EMAIL:-}
+      AUTH_BOOTSTRAP_ADMIN_PASSWORD: ${AUTH_BOOTSTRAP_ADMIN_PASSWORD:-}
+      AUTH_BOOTSTRAP_ADMIN_NAME: ${AUTH_BOOTSTRAP_ADMIN_NAME:-系统管理员}
+      FEATURE_KNOWLEDGE: ${FEATURE_KNOWLEDGE:-true}
+      FEATURE_CONVERSATION: ${FEATURE_CONVERSATION:-true}
+      FEATURE_COMMERCE: ${FEATURE_COMMERCE:-true}
+      FEATURE_HANDOFF: ${FEATURE_HANDOFF:-true}
+      FEATURE_ANALYTICS: ${FEATURE_ANALYTICS:-true}
+      FEATURE_CUSTOMER: ${FEATURE_CUSTOMER:-true}
+      AI_MIN_EVIDENCE_SCORE: ${AI_MIN_EVIDENCE_SCORE:-0.18}
+      AI_CACHE_TTL_SECONDS: ${AI_CACHE_TTL_SECONDS:-300}
+      AI_MODEL_PROVIDER: ${AI_MODEL_PROVIDER:-mock}
+      AI_MODEL_BASE_URL: ${AI_MODEL_BASE_URL:-https://api.deepseek.com}
+      AI_MODEL_API_KEY: ${AI_MODEL_API_KEY:-}
+      AI_MODEL_NAME: ${AI_MODEL_NAME:-deepseek-v4-flash}
+      AI_MODEL_TIMEOUT_SECONDS: ${AI_MODEL_TIMEOUT_SECONDS:-12}
+      AI_MODEL_TEMPERATURE: ${AI_MODEL_TEMPERATURE:-0}
+      AI_MODEL_MAX_TOKENS: ${AI_MODEL_MAX_TOKENS:-600}
+      AI_MODEL_FALLBACK_ENABLED: ${AI_MODEL_FALLBACK_ENABLED:-true}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v4}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-256}
+      EMBEDDING_TIMEOUT_SECONDS: ${EMBEDDING_TIMEOUT_SECONDS:-10}
+      VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-auto}
+      PGVECTOR_DIMENSIONS: ${PGVECTOR_DIMENSIONS:-256}
+      RERANK_PROVIDER: ${RERANK_PROVIDER:-heuristic}
+      RERANK_BASE_URL: ${RERANK_BASE_URL:-https://dashscope.aliyuncs.com/compatible-api/v1}
+      RERANK_API_KEY: ${RERANK_API_KEY:-}
+      RERANK_MODEL: ${RERANK_MODEL:-qwen3-rerank}
+      RERANK_TIMEOUT_SECONDS: ${RERANK_TIMEOUT_SECONDS:-8}
+      RERANK_CANDIDATE_LIMIT: ${RERANK_CANDIDATE_LIMIT:-20}
+      RERANK_TOP_N: ${RERANK_TOP_N:-5}
+      OMS_PROVIDER: ${COMPOSE_OMS_PROVIDER:-http}
+      OMS_BASE_URL: ${COMPOSE_OMS_BASE_URL:-http://mock-oms:8090}
+      OMS_API_KEY: ${OMS_API_KEY:-}
+      OMS_TIMEOUT_SECONDS: ${OMS_TIMEOUT_SECONDS:-3}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-oms:
+        condition: service_healthy
+
+  mock-oms:
+    build: ./services/mock_oms
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: customer_service
+      POSTGRES_USER: customer_service
+      POSTGRES_PASSWORD: change_me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U customer_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+    depends_on:
+      api:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change_me_grafana}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

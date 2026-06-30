@@ -1,0 +1,12 @@
+name: handoff
+version: 0.1.0
+enabled_by: FEATURE_HANDOFF
+dependencies:
+  - conversation
+owns:
+  - handoff_tickets
+consumes:
+  - conversation.handoff_requested
+publishes:
+  - handoff.ticket_created
+

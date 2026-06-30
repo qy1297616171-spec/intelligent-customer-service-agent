@@ -1,0 +1,8 @@
+name: audit
+version: 0.1.0
+enabled_by: FEATURE_AUDIT
+dependencies:
+  - auth
+owns:
+  - audit_logs
+

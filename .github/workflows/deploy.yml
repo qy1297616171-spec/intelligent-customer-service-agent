@@ -1,0 +1,33 @@
+name: Deploy Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: demo
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload release files
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DEMO_HOST }}
+          username: ${{ secrets.DEMO_USER }}
+          key: ${{ secrets.DEMO_SSH_KEY }}
+          source: "Dockerfile,docker-compose.yml,docker-entrypoint.sh,pyproject.toml,README.md,src,migrations,alembic.ini,services,deploy"
+          target: ${{ secrets.DEMO_PATH }}
+      - name: Build and restart
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEMO_HOST }}
+          username: ${{ secrets.DEMO_USER }}
+          key: ${{ secrets.DEMO_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEMO_PATH }}
+            docker compose up -d --build --remove-orphans
+            docker compose ps
+            curl --fail http://127.0.0.1:8080/health

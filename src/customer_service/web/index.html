@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="企业智能客服工作台">
+  <title>智服云 · 企业客服工作台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app-shell" class="app-shell">
+    <aside class="global-nav">
+      <div class="logo" title="智服云">智</div>
+      <nav aria-label="全局导航">
+        <button class="global-item active" data-page="chat" title="客服工作台" aria-label="客服工作台">
+          <svg viewBox="0 0 24 24"><path d="M7 8h10M7 12h7M5 19l-2 2v-4a8 8 0 1 1 4 3"/></svg>
+        </button>
+        <button class="global-item" data-page="customers" title="客户中心" aria-label="客户中心">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        </button>
+        <button class="global-item" data-page="knowledge" title="知识库" aria-label="知识库">
+          <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h12v17H6a2 2 0 0 1-2-2V5Zm0 12a2 2 0 0 1 2-2h12M8 7h6"/></svg>
+        </button>
+        <button class="global-item" data-page="analytics" title="数据分析" aria-label="数据分析">
+          <svg viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg>
+        </button>
+        <button class="global-item" data-page="tickets" title="工单中心" aria-label="工单中心">
+          <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5"/></svg>
+        </button>
+        <button class="global-item" data-page="audit" title="审计日志" aria-label="审计日志">
+          <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.8 8.4 7 10 4.2-1.6 7-5.2 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
+        </button>
+      </nav>
+      <div class="global-bottom">
+        <a class="global-item" href="/docs" target="_blank" title="接口文档" aria-label="接口文档">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.2 2.2 0 1 1 3.7 1.6c-1 .7-1.5 1.1-1.5 2.4m0 3h.01"/></svg>
+        </a>
+        <button id="current-user" class="nav-avatar" title="当前用户 / 退出登录">管</button>
+      </div>
+    </aside>
+
+    <aside class="session-panel">
+      <div class="company-row">
+        <div class="company-badge">企</div>
+        <div><strong>星选商城</strong><span>电商智能客服中心</span></div>
+        <button class="icon-only" aria-label="切换企业">⌄</button>
+      </div>
+      <button id="new-chat" class="new-chat"><span>＋</span> 新建会话</button>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <input id="session-search" placeholder="搜索会话">
+        <kbd>⌘ K</kbd>
+      </div>
+      <div class="session-filter">
+        <button class="active" data-session-filter="all">全部 <span id="session-count">0</span></button>
+        <button data-session-filter="pending">待处理 <span id="pending-count">0</span></button>
+      </div>
+      <div id="session-list" class="session-list"><p class="session-loading">正在读取会话…</p></div>
+      <div class="agent-card">
+        <span class="channel-avatar agent">林</span>
+        <span><strong>林晓 · 客服主管</strong><small><i></i> 在线服务中</small></span>
+        <button class="icon-only">•••</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section id="chat-page" class="page active">
+        <header class="chat-header">
+          <div class="bot-identity">
+            <div class="bot-avatar"><span>AI</span><i></i></div>
+            <div><h1>星选商城智能客服</h1><p><span id="model-label">正在读取模型状态</span> · 订单系统与商品知识库已连接</p></div>
+          </div>
+          <div class="header-actions">
+            <label class="mode-select">回答模式
+              <select aria-label="回答模式"><option>严谨模式</option><option>快速模式</option></select>
+            </label>
+            <button id="transfer-button" class="outline-button">
+              <svg viewBox="0 0 24 24"><path d="M7 11a5 5 0 0 1 10 0v4M5 12h2v5H5a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2Zm14 0h-2v5h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2ZM17 17c0 2-2 3-5 3"/></svg>
+              转人工
+            </button>
+            <button class="more-button" aria-label="更多操作">•••</button>
+          </div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite">
+          <div class="date-divider"><span>今天</span></div>
+          <article class="message assistant">
+            <div class="message-avatar">AI</div>
+            <div class="message-body">
+              <div class="message-name">星选商城智能客服 <span>机器人</span></div>
+              <div class="bubble welcome-bubble">
+                <h2>您好，欢迎来到星选商城</h2>
+                <p>我可以查询订单、物流与退款进度，也可以解答商品、退换货和发票问题。业务状态直接来自订单系统。</p>
+                <div class="suggestion-grid">
+                  <button data-question="我的订单物流到哪了？"><span>物流</span><b>查询我的物流进度</b><i>→</i></button>
+                  <button data-question="我的退款进度怎么样？"><span>售后</span><b>查看退款处理状态</b><i>→</i></button>
+                  <button data-question="七天无理由退货有什么要求？"><span>退货</span><b>了解退换货政策</b><i>→</i></button>
+                  <button data-question="如何申请电子发票？"><span>发票</span><b>申请电子发票</b><i>→</i></button>
+                </div>
+              </div>
+              <time>刚刚</time>
+            </div>
+          </article>
+        </div>
+
+        <footer class="composer-area">
+          <div class="composer-toolbar">
+            <button class="muted-action" title="上传附件">＋ 附件</button>
+            <button class="muted-action" title="常用话术">▤ 常用话术</button>
+            <span>知识库已连接 <i></i></span>
+          </div>
+          <form id="ask-form" class="composer">
+            <textarea id="question" rows="2" maxlength="4000" placeholder="请输入消息，Enter 发送，Shift + Enter 换行" required></textarea>
+            <div class="composer-bottom">
+              <small>AI 生成内容，请核对重要信息</small>
+              <button id="send-button" type="submit">发送 <kbd>↵</kbd></button>
+            </div>
+          </form>
+        </footer>
+      </section>
+
+      <section id="knowledge-page" class="page knowledge-page">
+        <header class="page-header">
+          <div><p>知识运营</p><h1>企业知识库</h1><span>维护客服回答的唯一可信依据</span></div>
+          <button id="open-create" class="primary-button">＋ 新建知识</button>
+        </header>
+        <div class="metric-grid">
+          <article><span class="metric-icon green-bg">▤</span><div><small>知识总数</small><strong id="metric-total">0</strong><em>条</em></div></article>
+          <article><span class="metric-icon blue-bg">✓</span><div><small>已发布</small><strong id="metric-published">0</strong><em>条</em></div></article>
+          <article><span class="metric-icon amber-bg">◎</span><div><small>今日命中</small><strong>24</strong><em>次</em></div></article>
+          <article><span class="metric-icon purple-bg">↗</span><div><small>平均命中率</small><strong>92</strong><em>%</em></div></article>
+        </div>
+        <div class="knowledge-toolbar">
+          <div class="search-box wide"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="knowledge-search" placeholder="搜索知识标题或内容"></div>
+          <div><select aria-label="知识状态"><option>全部状态</option><option>已发布</option></select><button id="refresh-documents" class="outline-button">刷新</button></div>
+        </div>
+        <div class="knowledge-table-wrap">
+          <table class="knowledge-table">
+            <thead><tr><th>知识标题</th><th>来源</th><th>状态</th><th>内容摘要</th><th>操作</th></tr></thead>
+            <tbody id="document-list"><tr><td colspan="5" class="table-empty">暂无知识，请新建第一条企业知识。</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="analytics-page" class="page analytics-page">
+        <header class="page-header analytics-header">
+          <div><p>运营洞察</p><h1>客服数据分析</h1><span>基于真实会话、知识命中与转人工工单统计</span></div>
+          <button id="refresh-analytics" class="outline-button">刷新数据</button>
+        </header>
+        <div class="analytics-metrics">
+          <article><small>累计会话</small><strong id="analytics-conversations">0</strong><span>个客户会话</span></article>
+          <article><small>AI 解决率</small><strong id="analytics-resolution">0%</strong><span>业务事实与知识回答</span></article>
+          <article><small>转人工工单</small><strong id="analytics-handoffs">0</strong><span id="analytics-pending">0 个待处理</span></article>
+          <article><small>知识库规模</small><strong id="analytics-knowledge">0</strong><span>条已发布知识</span></article>
+        </div>
+        <div class="analytics-grid">
+          <article class="analytics-card trend-card">
+            <header><div><h2>近 7 日服务趋势</h2><p>会话量与消息量变化</p></div><span class="live-badge">实时数据</span></header>
+            <div id="trend-chart" class="trend-chart"></div>
+          </article>
+          <article class="analytics-card type-card">
+            <header><div><h2>回答类型</h2><p>客服回答来源分布</p></div></header>
+            <div id="answer-types" class="answer-types"></div>
+          </article>
+          <article class="analytics-card handoff-table-card">
+            <header><div><h2>最近转人工工单</h2><p>需要客服团队继续跟进的会话</p></div></header>
+            <table class="analytics-table"><thead><tr><th>工单号</th><th>客户</th><th>技能组</th><th>优先级</th><th>状态</th><th>创建时间</th></tr></thead><tbody id="analytics-tickets"><tr><td colspan="6">暂无工单</td></tr></tbody></table>
+          </article>
+        </div>
+      </section>
+
+      <section id="tickets-page" class="page tickets-page">
+        <header class="page-header tickets-header">
+          <div><p>人工服务</p><h1>工单中心</h1><span>处理 AI 转人工及需要人工跟进的电商售后问题</span></div>
+          <button id="refresh-tickets" class="outline-button">刷新工单</button>
+        </header>
+        <div class="ticket-metrics">
+          <article><small>排队中</small><strong id="ticket-queued">0</strong><span>等待客服受理</span></article>
+          <article><small>处理中</small><strong id="ticket-processing">0</strong><span>客服正在跟进</span></article>
+          <article><small>已解决</small><strong id="ticket-resolved">0</strong><span>本期累计解决</span></article>
+          <article><small>高优先级</small><strong id="ticket-high">0</strong><span>需要优先响应</span></article>
+        </div>
+        <div class="ticket-toolbar">
+          <div class="search-box wide"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="ticket-search" placeholder="搜索工单号、客户或问题"></div>
+          <select id="ticket-status-filter"><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="resolved">已解决</option><option value="closed">已关闭</option></select>
+        </div>
+        <div class="ticket-table-wrap">
+          <table class="ticket-table"><thead><tr><th>工单号</th><th>客户</th><th>问题描述</th><th>技能组</th><th>优先级</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="ticket-list"><tr><td colspan="8" class="table-empty">正在读取工单…</td></tr></tbody></table>
+        </div>
+      </section>
+
+      <section id="customers-page" class="page customers-page">
+        <header class="page-header customers-header">
+          <div><p>客户运营</p><h1>客户中心</h1><span>统一管理会员档案、消费价值与服务标签</span></div>
+          <button id="refresh-customers" class="outline-button">刷新客户</button>
+        </header>
+        <div class="customer-metrics">
+          <article><small>客户总数</small><strong id="customer-total">0</strong><span>当前企业客户</span></article>
+          <article><small>高价值客户</small><strong id="customer-vip">0</strong><span>金卡及黑金会员</span></article>
+          <article><small>累计订单</small><strong id="customer-orders">0</strong><span>所有客户订单</span></article>
+          <article><small>累计消费</small><strong id="customer-spent">¥0</strong><span>客户生命周期价值</span></article>
+        </div>
+        <div class="customer-toolbar">
+          <div class="search-box wide"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="customer-search" placeholder="搜索姓名、客户编号或手机号"></div>
+          <select id="customer-level-filter"><option value="all">全部会员</option><option>普通会员</option><option>银卡会员</option><option>金卡会员</option><option>黑金会员</option></select>
+        </div>
+        <div class="customer-table-wrap"><table class="customer-table"><thead><tr><th>客户</th><th>会员等级</th><th>来源/地区</th><th>订单数</th><th>累计消费</th><th>客户标签</th><th>状态</th><th>操作</th></tr></thead><tbody id="customer-list"><tr><td colspan="8" class="table-empty">正在读取客户…</td></tr></tbody></table></div>
+      </section>
+
+      <section id="audit-page" class="page audit-page">
+        <header class="page-header audit-header"><div><p>安全治理</p><h1>操作审计</h1><span>记录企业成员的登录和关键数据变更</span></div><button id="refresh-audit" class="outline-button">刷新日志</button></header>
+        <div class="audit-notice"><strong>审计保护已开启</strong><span>日志按企业隔离，普通成员无法访问，关键写操作自动留痕。</span></div>
+        <div class="ticket-table-wrap"><table class="ticket-table"><thead><tr><th>时间</th><th>用户编号</th><th>操作</th><th>资源</th><th>结果</th><th>IP 地址</th></tr></thead><tbody id="audit-list"><tr><td colspan="6" class="table-empty">正在读取审计日志…</td></tr></tbody></table></div>
+      </section>
+    </main>
+
+    <aside class="context-panel">
+      <div class="context-tabs"><button class="active">会话信息</button><button>AI 分析</button></div>
+      <section class="context-section customer-profile">
+        <div class="profile-head"><span id="profile-avatar" class="profile-avatar">王</span><div><strong id="profile-name">王女士</strong><small><i></i> <span id="profile-membership">金卡会员</span> · 当前在线</small></div></div>
+        <dl><div><dt>客户编号</dt><dd id="profile-id">customer-2846</dd></div><div><dt>客户来源</dt><dd id="profile-source">商城官网</dd></div><div><dt>累计订单</dt><dd id="profile-orders">12 笔</dd></div><div><dt>累计消费</dt><dd id="profile-spent">¥ 3,826.00</dd></div></dl>
+        <div id="profile-tags" class="tags"><span>高复购</span><span>售后咨询</span></div>
+      </section>
+      <section class="context-section order-section">
+        <div class="section-title"><h3>最近订单</h3><span id="order-status">读取中</span></div>
+        <div id="order-card" class="order-card loading">正在连接订单系统…</div>
+      </section>
+      <section class="context-section">
+        <div class="section-title"><h3>本次会话</h3><span>服务中</span></div>
+        <div class="session-stats"><div><strong id="round-count">0</strong><small>对话轮次</small></div><div><strong id="avg-latency">--</strong><small>响应耗时</small></div><div><strong id="source-count">0</strong><small>引用知识</small></div></div>
+      </section>
+      <section class="context-section source-section">
+        <div class="section-title"><h3>知识引用</h3><button id="go-knowledge">管理知识库</button></div>
+        <div id="source-list" class="source-list"><div class="source-empty"><span>⌕</span><p>回答后将在这里显示引用的知识来源</p></div></div>
+      </section>
+      <section class="context-section guardrail-card">
+        <div class="section-title"><h3>回答保障</h3><span class="safe-status">已开启</span></div>
+        <ul><li><i></i>证据不足自动拒答</li><li><i></i>企业数据租户隔离</li><li><i></i>回答来源可追溯</li></ul>
+      </section>
+    </aside>
+  </div>
+
+  <div id="knowledge-modal" class="modal" aria-hidden="true">
+    <div class="modal-mask" data-close-modal></div>
+    <form id="knowledge-form" class="modal-card">
+      <header><div><p>知识库</p><h2 id="modal-title">新建企业知识</h2></div><button type="button" data-close-modal aria-label="关闭">×</button></header>
+      <div class="modal-body">
+        <label>知识标题 <em>*</em><input id="doc-title" maxlength="200" placeholder="例如：七天无理由退货规则" required></label>
+        <label>知识内容 <em>*</em><textarea id="doc-content" rows="8" maxlength="50000" placeholder="请输入经过企业确认的完整知识内容" required></textarea></label>
+        <label>资料来源<input id="doc-source" maxlength="500" placeholder="例如：售后服务制度 2026 版"></label>
+        <p class="form-note">保存后立即生效，智能客服将依据此内容回答并展示引用来源。</p>
+      </div>
+      <footer><button type="button" class="outline-button" data-close-modal>取消</button><button id="save-document" class="primary-button" type="submit">保存并发布</button></footer>
+    </form>
+  </div>
+  <div id="customer-modal" class="modal" aria-hidden="true">
+    <div class="modal-mask" data-close-customer></div>
+    <form id="customer-form" class="modal-card customer-modal-card">
+      <header><div><p>客户中心</p><h2 id="customer-modal-title">编辑客户</h2></div><button type="button" data-close-customer aria-label="关闭">×</button></header>
+      <div class="modal-body">
+        <label>会员等级<select id="customer-membership"><option>普通会员</option><option>银卡会员</option><option>金卡会员</option><option>黑金会员</option></select></label>
+        <label>客户标签<input id="customer-tags" placeholder="多个标签使用逗号分隔"></label>
+        <label>客户状态<select id="customer-status"><option value="active">正常</option><option value="inactive">停用</option><option value="blocked">黑名单</option></select></label>
+        <p class="form-note">客户标签会同步显示在客服工作台，帮助客服快速识别客户价值和服务偏好。</p>
+      </div>
+      <footer><button type="button" class="outline-button" data-close-customer>取消</button><button class="primary-button" type="submit">保存客户资料</button></footer>
+    </form>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

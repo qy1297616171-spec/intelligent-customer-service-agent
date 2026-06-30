@@ -1,0 +1,20 @@
+{
+  "measured_at": "2026-06-30T11:29:10.496918+00:00",
+  "target": "http://127.0.0.1:8080",
+  "requests": 100,
+  "concurrency": 10,
+  "duration_seconds": 1.353,
+  "throughput_rps": 73.89,
+  "success_rate": 1.0,
+  "latency_ms": {
+    "min": 64.71,
+    "mean": 127.28,
+    "p50": 128.54,
+    "p95": 169.19,
+    "p99": 188.25,
+    "max": 188.4
+  },
+  "status_codes": {
+    "200": 100
+  }
+}

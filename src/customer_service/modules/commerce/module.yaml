@@ -1,0 +1,11 @@
+name: commerce
+version: 0.1.0
+enabled_by: FEATURE_COMMERCE
+dependencies: []
+owns:
+  - commerce_orders
+  - commerce_logistics_events
+publishes:
+  - commerce.order_status_changed
+  - commerce.refund_status_changed
+

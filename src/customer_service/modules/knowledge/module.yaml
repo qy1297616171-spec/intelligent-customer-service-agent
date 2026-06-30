@@ -1,0 +1,9 @@
+name: knowledge
+version: 0.1.0
+enabled_by: FEATURE_KNOWLEDGE
+dependencies: []
+owns:
+  - knowledge_documents
+publishes:
+  - knowledge.document_created
+

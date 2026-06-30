@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: customer-service
+    orgId: 1
+    folder: 客服系统
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards

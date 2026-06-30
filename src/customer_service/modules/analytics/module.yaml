@@ -1,0 +1,8 @@
+name: analytics
+version: 0.1.0
+enabled_by: FEATURE_ANALYTICS
+dependencies:
+  - conversation
+  - handoff
+  - knowledge
+

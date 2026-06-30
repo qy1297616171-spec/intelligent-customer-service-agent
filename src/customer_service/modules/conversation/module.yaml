@@ -1,0 +1,14 @@
+name: conversation
+version: 0.1.0
+enabled_by: FEATURE_CONVERSATION
+dependencies:
+  - knowledge
+owns:
+  - conversations
+  - messages
+consumes:
+  - knowledge.document_created
+publishes:
+  - conversation.answer_created
+  - conversation.handoff_requested
+

@@ -1,0 +1,7 @@
+name: customer
+version: 0.1.0
+enabled_by: FEATURE_CUSTOMER
+dependencies: []
+owns:
+  - customers
+
