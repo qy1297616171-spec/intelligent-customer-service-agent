@@ -102,6 +102,7 @@ services:
     command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
     volumes:
       - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
       - prometheus_data:/prometheus
     ports:
       - "${PROMETHEUS_PORT:-9091}:9090"

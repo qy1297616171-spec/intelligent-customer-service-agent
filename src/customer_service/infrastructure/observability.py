@@ -17,6 +17,21 @@ HTTP_DURATION = Histogram(
     ("method", "route"),
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
 )
+AI_MODEL_REQUESTS = Counter(
+    "customer_service_ai_model_requests_total",
+    "LLM requests grouped by model and outcome",
+    ("model", "outcome"),
+)
+AI_MODEL_DURATION = Histogram(
+    "customer_service_ai_model_duration_seconds",
+    "LLM request duration",
+    ("model",),
+    buckets=(0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30),
+)
+AI_MODEL_FALLBACKS = Counter(
+    "customer_service_ai_model_fallbacks_total",
+    "Number of grounded fallbacks caused by LLM gateway failures",
+)
 
 
 class JsonFormatter(logging.Formatter):

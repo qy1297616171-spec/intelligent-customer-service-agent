@@ -8,6 +8,7 @@ from customer_service.ai_platform.contracts import (
     Evidence,
     Reranker,
     Retriever,
+    SafetyPolicy,
 )
 
 
@@ -32,6 +33,7 @@ class AnswerOrchestrator:
         reranker: Reranker | None = None,
         candidate_limit: int = 20,
         evidence_limit: int = 5,
+        safety_policy: SafetyPolicy | None = None,
     ) -> None:
         self._retriever = retriever
         self._generator = generator
@@ -41,11 +43,21 @@ class AnswerOrchestrator:
         self._reranker = reranker
         self._candidate_limit = candidate_limit
         self._evidence_limit = evidence_limit
+        self._safety_policy = safety_policy
 
     def answer(
         self, tenant_id: str, question: str, customer_id: str | None = None
     ) -> AnswerResult:
         started = perf_counter()
+        if self._safety_policy is not None and self._safety_policy.block_reason(question):
+            return AnswerResult(
+                answer="无法提供其他客户数据、系统密钥或编造业务结果，请通过正规流程查询；如需帮助请联系人工客服。",
+                evidence=[],
+                grounded=False,
+                cache_hit=False,
+                latency_ms=self._elapsed(started),
+                answer_type="refusal",
+            )
         if self._business_resolver is not None:
             business_fact = self._business_resolver.resolve(
                 tenant_id, customer_id, question

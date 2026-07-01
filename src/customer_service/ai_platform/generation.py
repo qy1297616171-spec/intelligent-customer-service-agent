@@ -1,9 +1,15 @@
 import json
 import logging
+from time import perf_counter
 
 import httpx
 
 from customer_service.ai_platform.contracts import AnswerGenerator, Evidence
+from customer_service.infrastructure.observability import (
+    AI_MODEL_DURATION,
+    AI_MODEL_FALLBACKS,
+    AI_MODEL_REQUESTS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +59,7 @@ class OpenAICompatibleGenerator:
         self._client = client
 
     def generate(self, question: str, evidence: list[Evidence]) -> str:
+        started = perf_counter()
         evidence_payload = [
             {
                 "编号": index,
@@ -86,11 +93,16 @@ class OpenAICompatibleGenerator:
             answer = data["choices"][0]["message"]["content"]
             if not isinstance(answer, str) or not answer.strip():
                 raise ModelGatewayError("模型返回了空答案")
+            AI_MODEL_REQUESTS.labels(self._model, "success").inc()
             return answer.strip()
         except ModelGatewayError:
+            AI_MODEL_REQUESTS.labels(self._model, "error").inc()
             raise
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+            AI_MODEL_REQUESTS.labels(self._model, "error").inc()
             raise ModelGatewayError("上游模型调用失败") from exc
+        finally:
+            AI_MODEL_DURATION.labels(self._model).observe(perf_counter() - started)
 
     def _post(self, payload: dict[str, object]) -> httpx.Response:
         headers = {
@@ -116,6 +128,6 @@ class FallbackGenerator:
         try:
             return self._primary.generate(question, evidence)
         except ModelGatewayError:
+            AI_MODEL_FALLBACKS.inc()
             logger.warning("Model gateway unavailable; returned grounded evidence fallback")
             return self._fallback.generate(question, evidence)
-

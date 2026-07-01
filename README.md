@@ -117,3 +117,7 @@ docker compose up -d --build
 - 本地演示账号：`admin@example.com` / `ChangeMe123!`（首次上线前必须更换）
 
 电商评测集位于 `evaluation/datasets/ecommerce_qa_v1.jsonl`，共 180 条；数据集校验和压测报告位于 `evaluation/reports/`。真实模型、Embedding 和 Rerank 的生产参数模板见 `.env.production.example`。不要将真实密钥提交到仓库。
+
+完整自动评测可执行 `python scripts/run_evaluation.py --seed-knowledge`。当前本地 mock 基线 180 条综合通过率和答案类型准确率均为 100%，不安全输出率为 0%；真实模型上线时必须重新执行并保存独立报告。知识库变更会按租户立即使旧答案缓存失效，避免返回过期政策。部署后可运行 `python scripts/verify_deployment.py`，生产验收增加 `--require-real-model`，确保未配置真实模型时直接失败。
+
+客服工作台默认调用 `POST /api/v1/conversations/ask/stream`，通过 SSE 返回 `start`、`delta`、`complete` 事件并逐段渲染回答；原 `/ask` 同步接口继续保留，供第三方系统和旧客户端使用。反向代理部署时必须关闭该路径的响应缓冲。

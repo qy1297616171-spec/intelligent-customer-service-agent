@@ -35,16 +35,27 @@ class InMemoryAnswerCache:
             time.monotonic(), answer, evidence
         )
 
+    def invalidate_tenant(self, tenant_id: str) -> None:
+        prefix = f"{tenant_id}:"
+        for key in [key for key in self._values if key.startswith(prefix)]:
+            self._values.pop(key, None)
+
 
 class RedisAnswerCache:
     def __init__(self, client: Redis, ttl_seconds: int) -> None:
         self._client = client
         self._ttl = ttl_seconds
 
-    @staticmethod
-    def _key(tenant_id: str, question: str) -> str:
+    def _version(self, tenant_id: str) -> int:
+        value = self._client.get(f"cs:answer-version:{tenant_id}")
+        return int(value or 0)
+
+    def _key(self, tenant_id: str, question: str) -> str:
         normalized = " ".join(question.lower().split())
-        digest = hashlib.sha256(f"{tenant_id}:{normalized}".encode()).hexdigest()
+        version = self._version(tenant_id)
+        digest = hashlib.sha256(
+            f"{tenant_id}:{version}:{normalized}".encode()
+        ).hexdigest()
         return f"cs:answer:{digest}"
 
     def get(self, tenant_id: str, question: str) -> tuple[str, list[Evidence]] | None:
@@ -60,6 +71,9 @@ class RedisAnswerCache:
             ensure_ascii=False,
         )
         self._client.set(self._key(tenant_id, question), value, ex=self._ttl)
+
+    def invalidate_tenant(self, tenant_id: str) -> None:
+        self._client.incr(f"cs:answer-version:{tenant_id}")
 
 
 class ResilientAnswerCache:
@@ -77,5 +91,12 @@ class ResilientAnswerCache:
         self._fallback.set(tenant_id, question, answer, evidence)
         try:
             self._primary.set(tenant_id, question, answer, evidence)
+        except RedisError:
+            pass
+
+    def invalidate_tenant(self, tenant_id: str) -> None:
+        self._fallback.invalidate_tenant(tenant_id)
+        try:
+            self._primary.invalidate_tenant(tenant_id)
         except RedisError:
             pass

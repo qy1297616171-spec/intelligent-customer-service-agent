@@ -20,6 +20,9 @@ class FakeRedis:
     def __init__(self): self.values = {}
     def get(self, key): return self.values.get(key)
     def set(self, key, value, ex=None): self.values[key] = value; return True
+    def incr(self, key):
+        self.values[key] = int(self.values.get(key, 0)) + 1
+        return self.values[key]
     def pipeline(self): return FakePipeline(self)
 
 
@@ -30,6 +33,8 @@ def test_redis_answer_cache_round_trip() -> None:
     answer, restored = cache.get("tenant", "退款多久")
     assert answer == "三个工作日"
     assert restored[0].document_id == "doc"
+    cache.invalidate_tenant("tenant")
+    assert cache.get("tenant", "退款多久") is None
 
 
 def test_rate_limiter_and_api_429() -> None:

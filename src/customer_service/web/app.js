@@ -89,13 +89,41 @@ async function askQuestion(question) {
   sendButton.disabled = true;
   const loading = appendMessage("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
   try {
-    const response = await fetch("/api/v1/conversations/ask", {
+    const response = await fetch("/api/v1/conversations/ask/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenant_id: tenantId, customer_id: customerId, conversation_id: currentConversationId, question }),
     });
     if (!response.ok) throw new Error("请求失败");
-    const data = await response.json();
+    if (!response.body) throw new Error("浏览器不支持流式回答");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let streamedAnswer = "";
+    let data = null;
+    loading.querySelector(".bubble").innerHTML = '<p class="stream-answer"></p><span class="typing"><i></i><i></i><i></i></span>';
+    const streamAnswer = loading.querySelector(".stream-answer");
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() || "";
+      for (const block of blocks) {
+        const event = block.split("\n").find((line) => line.startsWith("event:"))?.slice(6).trim();
+        const payloadLine = block.split("\n").find((line) => line.startsWith("data:"));
+        if (!payloadLine) continue;
+        const payload = JSON.parse(payloadLine.slice(5).trim());
+        if (event === "start") currentConversationId = payload.conversation_id;
+        if (event === "delta") {
+          streamedAnswer += payload.content;
+          streamAnswer.textContent = streamedAnswer;
+          messages.scrollTop = messages.scrollHeight;
+        }
+        if (event === "complete") data = payload;
+      }
+      if (done) break;
+    }
+    if (!data) throw new Error("流式回答未正常结束");
     currentConversationId = data.conversation_id;
     const citations = data.citations.map((item) => `
       <div class="citation-link"><strong>知识来源</strong> · ${escapeHtml(item.title)} / ${escapeHtml(item.source)}</div>`).join("");
