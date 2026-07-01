@@ -8,8 +8,8 @@
 
 ## 答案类型分布
 
-- business_fact: 45
-- knowledge: 120
+- business_fact: 42
+- knowledge: 123
 - refusal: 15
 
 ## 场景分布

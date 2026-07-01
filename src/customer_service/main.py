@@ -19,6 +19,7 @@ from customer_service.ai_platform.factory import build_answer_generator
 from customer_service.ai_platform.embeddings import build_embedding_provider
 from customer_service.ai_platform.orchestrator import AnswerOrchestrator
 from customer_service.ai_platform.rerank import build_reranker
+from customer_service.ai_platform.safety import RuleBasedSafetyPolicy
 from customer_service.bootstrap.config import Settings, get_settings
 from customer_service.bootstrap.modules import ModuleDefinition, ModuleRegistry
 from customer_service.modules.conversation.router import build_router as conversation_router
@@ -100,6 +101,7 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
         reranker=build_reranker(settings),
         candidate_limit=settings.rerank_candidate_limit,
         evidence_limit=settings.rerank_top_n,
+        safety_policy=RuleBasedSafetyPolicy(),
     )
 
     registry = ModuleRegistry(settings)
@@ -141,7 +143,7 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
             name="knowledge",
             version="0.1.0",
             enabled=lambda config: config.feature_knowledge,
-            router=knowledge_router(knowledge_store),
+            router=knowledge_router(knowledge_store, answer_cache),
         )
     )
     registry.register(

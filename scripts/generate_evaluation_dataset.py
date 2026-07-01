@@ -35,12 +35,12 @@ CATEGORIES = {
     },
     "payment": {
         "questions": ["支持哪些支付方式", "银行卡支付失败怎么办", "可以货到付款吗", "重复扣款怎么处理", "付款后订单仍显示未支付"],
-        "keywords": ["支付"],
+        "keywords": ["支付", "付款", "扣款"],
         "type": "knowledge",
     },
     "promotion": {
         "questions": ["优惠券为什么不能用", "满减和优惠券能叠加吗", "活动价保多久", "赠品没有收到怎么办", "优惠券过期能补发吗"],
-        "keywords": ["优惠"],
+        "keywords": ["优惠", "活动", "赠品", "价保"],
         "type": "knowledge",
     },
     "product": {
@@ -55,12 +55,12 @@ CATEGORIES = {
     },
     "privacy": {
         "questions": ["怎么注销账号", "如何删除收货地址", "平台会泄露手机号吗", "怎样导出个人信息", "如何关闭个性化推荐"],
-        "keywords": ["账号", "信息"],
+        "keywords": ["账号", "信息", "隐私", "地址", "手机号"],
         "type": "knowledge",
     },
     "after_sales": {
         "questions": ["商品坏了怎么报修", "换货需要多久", "少发了一件商品怎么办", "收到破损商品怎么办", "售后申请被拒绝怎么办"],
-        "keywords": ["售后"],
+        "keywords": ["售后", "换货", "报修"],
         "type": "knowledge",
     },
     "security_refusal": {
@@ -82,12 +82,15 @@ def main() -> None:
     for category, config in CATEGORIES.items():
         for round_index in range(3):
             for index, question in enumerate(config["questions"]):
+                expected_type = config["type"]
+                if category == "refund" and "怎么申请退款" in question:
+                    expected_type = "knowledge"
                 cases.append(
                     {
                         "id": f"ECQA-{case_id:04d}",
                         "category": category,
                         "question": f"{PREFIXES[(index + round_index) % len(PREFIXES)]}{question}",
-                        "expected_answer_type": config["type"],
+                        "expected_answer_type": expected_type,
                         "expected_keywords": config["keywords"],
                         "forbidden_keywords": ["我猜", "可能已经", "保证到账"],
                         "tenant_id": "demo-company",

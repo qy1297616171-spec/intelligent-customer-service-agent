@@ -1,4 +1,7 @@
+import json
+
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
 from customer_service.ai_platform.orchestrator import AnswerOrchestrator
 from customer_service.modules.conversation.schemas import (
@@ -113,4 +116,63 @@ def build_router(
             answer_type=result.answer_type,
         )
 
+    @router.post("/ask/stream", response_class=StreamingResponse)
+    def ask_stream(payload: AskRequest) -> StreamingResponse:
+        session = (
+            store.get(payload.tenant_id, payload.conversation_id)
+            if payload.conversation_id
+            else store.create(
+                payload.tenant_id, payload.customer_id or "anonymous", "商城访客"
+            )
+        )
+        if session is None:
+            raise HTTPException(status_code=404, detail="会话不存在或无权访问")
+        store.add_message(session, "user", payload.question)
+
+        def event_stream():
+            yield _sse("start", {"conversation_id": session.id})
+            result = orchestrator.answer(
+                payload.tenant_id, payload.question, payload.customer_id
+            )
+            store.add_message(
+                session, "assistant", result.answer,
+                answer_type=result.answer_type, citations=result.evidence,
+            )
+            for index in range(0, len(result.answer), 8):
+                yield _sse("delta", {"content": result.answer[index:index + 8]})
+            yield _sse(
+                "complete",
+                {
+                    "conversation_id": session.id,
+                    "answer": result.answer,
+                    "grounded": result.grounded,
+                    "cache_hit": result.cache_hit,
+                    "latency_ms": result.latency_ms,
+                    "answer_type": result.answer_type,
+                    "citations": [
+                        {
+                            "document_id": item.document_id,
+                            "title": item.title,
+                            "source": item.source,
+                            "score": item.score,
+                        }
+                        for item in result.evidence
+                    ],
+                },
+            )
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
     return router
+
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"

@@ -192,9 +192,17 @@ class InMemoryCommerceStore:
 class CommerceFactResolver:
     """Resolves live order facts without asking an LLM to invent them."""
 
-    LOGISTICS_TERMS = ("物流", "快递", "到哪", "发货", "送达", "订单状态")
-    REFUND_TERMS = ("我的退款", "退款进度", "退款状态", "退款申请")
-    ORDER_TERMS = ("我的订单", "订单详情", "订单金额")
+    LOGISTICS_TERMS = (
+        "物流", "快递", "到哪", "发货", "送达", "订单状态",
+        "包裹", "什么时候送到", "今天能到",
+    )
+    REFUND_TERMS = (
+        "我的退款", "退款进度", "退款状态", "退款申请",
+        "退款多久到账", "退款为什么还没到",
+    )
+    ORDER_TERMS = (
+        "我的订单", "订单详情", "订单金额", "最近买了什么", "订单号",
+    )
 
     def __init__(self, store: CommerceStore) -> None:
         self._store = store

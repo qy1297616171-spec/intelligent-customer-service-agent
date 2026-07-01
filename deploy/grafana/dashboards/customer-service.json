@@ -19,6 +19,16 @@
       "type": "timeseries", "title": "HTTP 错误率", "id": 3,
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
       "targets": [{"expr": "sum(rate(customer_service_http_requests_total{status=~\"4..|5..\"}[5m])) / clamp_min(sum(rate(customer_service_http_requests_total[5m])), 0.001)", "legendFormat": "错误率"}]
+    },
+    {
+      "type": "timeseries", "title": "大模型调用结果", "id": 4,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [{"expr": "sum by (outcome) (rate(customer_service_ai_model_requests_total[5m]))", "legendFormat": "{{outcome}}"}]
+    },
+    {
+      "type": "timeseries", "title": "大模型降级次数", "id": 5,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [{"expr": "increase(customer_service_ai_model_fallbacks_total[5m])", "legendFormat": "fallback"}]
     }
   ]
 }

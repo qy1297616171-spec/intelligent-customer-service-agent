@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Response
 
+from customer_service.ai_platform.contracts import AnswerCache
 from customer_service.modules.knowledge.schemas import (
     DocumentCreate,
     DocumentUpdate,
@@ -8,12 +9,17 @@ from customer_service.modules.knowledge.schemas import (
 from customer_service.modules.knowledge.service import InMemoryKnowledgeStore
 
 
-def build_router(store: InMemoryKnowledgeStore) -> APIRouter:
+def build_router(
+    store: InMemoryKnowledgeStore, answer_cache: AnswerCache | None = None
+) -> APIRouter:
     router = APIRouter(prefix="/api/v1/knowledge", tags=["knowledge"])
 
     @router.post("/documents", response_model=DocumentView, status_code=201)
     def create_document(payload: DocumentCreate) -> DocumentView:
-        return DocumentView.model_validate(store.add(payload), from_attributes=True)
+        document = store.add(payload)
+        if answer_cache is not None:
+            answer_cache.invalidate_tenant(payload.tenant_id)
+        return DocumentView.model_validate(document, from_attributes=True)
 
     @router.get("/documents", response_model=list[DocumentView])
     def list_documents(tenant_id: str = Query(min_length=1)) -> list[DocumentView]:
@@ -29,6 +35,8 @@ def build_router(store: InMemoryKnowledgeStore) -> APIRouter:
         document = store.update(document_id, payload)
         if document is None:
             raise HTTPException(status_code=404, detail="知识不存在或无权访问")
+        if answer_cache is not None:
+            answer_cache.invalidate_tenant(payload.tenant_id)
         return DocumentView.model_validate(document, from_attributes=True)
 
     @router.delete("/documents/{document_id}", status_code=204)
@@ -37,6 +45,8 @@ def build_router(store: InMemoryKnowledgeStore) -> APIRouter:
     ) -> Response:
         if not store.delete(tenant_id, document_id):
             raise HTTPException(status_code=404, detail="知识不存在或无权访问")
+        if answer_cache is not None:
+            answer_cache.invalidate_tenant(tenant_id)
         return Response(status_code=204)
 
     return router
